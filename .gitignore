@@ -1,0 +1,23 @@
+# 1. 敏感/本地設定檔 (確保 Sinopac 憑證不被提交)
+Sinopac.json
+Sinopac.pfx
+
+# 2. Python 編譯/快取檔案
+# 忽略所有 .pyc 檔案
+*.pyc 
+# 忽略 __pycache__ 資料夾及其內容
+__pycache__/
+
+# 3. 日誌與輸出檔案
+# 忽略 logs 資料夾及其所有內容
+logs/
+# 忽略所有 .log 檔案 (例如 shioaji.log 和 logs/ca.log.20250825)
+*.log
+
+# 4. IDE / 編輯器 / 作業系統相關檔案
+# 忽略 .gemini 資料夾及其所有內容
+.gemini/
+# 忽略 VS Code 設定檔
+.vscode/
+# 忽略 macOS 系統檔案
+.DS_Store

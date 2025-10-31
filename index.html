@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>永豐期權下單</title>
+    <!-- Pinning to a specific, stable version of the library -->
+    <script src="https://unpkg.com/lightweight-charts@4.0.1/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist/plotly.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 2em;
+            line-height: 1.6;
+            background-color: #f4f7f6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 2em;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1,
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 1em;
+            align-items: center;
+            margin-bottom: 1em;
+        }
+
+        label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        input,
+        select {
+            padding: 0.5em;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .button-group {
+            grid-column: 2;
+            display: flex;
+            gap: 1em;
+            justify-content: flex-start;
+        }
+
+        .main-actions {
+            grid-column: 1 / -1;
+            /* Span across both columns */
+            display: flex;
+            justify-content: center;
+            gap: 1em;
+            margin-top: 1em;
+        }
+
+        button {
+            flex-grow: 0;
+            /* Default to non-growing */
+            padding: 0.4em 0.8em;
+            /* Default to smaller padding */
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.9em;
+            /* Default to smaller font */
+            transition: background-color 0.2s;
+            max-width: none;
+            /* Default to no max-width */
+        }
+
+        #submit-order {
+            background-color: #007bff;
+        }
+
+        #submit-order:hover {
+            background-color: #0056b3;
+        }
+
+        #cancel-orders {
+            background-color: #dc3545;
+        }
+
+        #cancel-orders:hover {
+            background-color: #c82333;
+        }
+
+        #get-positions {
+            background-color: #007bff;
+        }
+
+        #get-positions:hover {
+            background-color: #0056b3;
+        }
+
+        #get-unitshare {
+            background-color: #28a745;
+        }
+
+        #get-unitshare:hover {
+            background-color: #218838;
+        }
+
+        #response {
+            margin-top: 1em;
+            padding: 1em;
+            background-color: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        #positions-table,
+        #unitshare-table,
+        #pending-table {
+            width: 100%;
+            margin-top: 1em;
+            border-collapse: collapse;
+        }
+
+        #positions-table th,
+        #positions-table td,
+        #unitshare-table th,
+        #unitshare-table td,
+        #pending-table th,
+        #pending-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        #positions-table th,
+        #unitshare-table th,
+        #pending-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .positions-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+            margin-top: 1em;
+        }
+
+        .positions-controls #positions-weekth {
+            padding: 0.4em;
+            font-size: 0.9em;
+            width: auto;
+        }
+
+        .positions-controls #delta-result {
+            margin-left: 1em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        #chart-container {
+            width: 100%;
+            height: 250px;
+            margin-bottom: 1.5em;
+        }
+
+        .chart-controls {
+            text-align: center;
+            margin-bottom: 2em;
+        }
+
+        .forms-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1em;
+            margin-bottom: 1em;
+        }
+
+        .form-wrapper {
+            flex: 1;
+            min-width: 300px;
+            background: #fdfdfd;
+            padding: 1em;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .form-wrapper h2 {
+            margin-top: 0;
+            font-size: 1.2em;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 0.5em;
+            margin-bottom: 1em;
+        }
+
+        #submit-combo-order {
+            background-color: #007bff;
+        }
+
+        #submit-combo-order:hover {
+            background-color: #0056b3;
+        }
+
+        /* Main Tab Styles */
+        .tab-container {
+            display: flex;
+            border-bottom: 1px solid #ccc;
+            margin-bottom: 1em;
+        }
+
+        .tab-button {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            background-color: #f1f1f1;
+            color: #333;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+            position: relative;
+            top: 1px;
+            transition: background-color 0.2s;
+        }
+
+        .tab-button:hover {
+            background-color: #e0e0e0;
+        }
+
+        .tab-button.active {
+            background-color: #fff;
+            border-color: #ccc;
+            font-weight: bold;
+            border-bottom: 1px solid #fff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Nested Form Tab Styles */
+        .form-tab-container {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            border-bottom: 1px solid #ccc;
+            margin-bottom: 1em;
+        }
+
+        .global-controls-wrapper {
+            display: flex;
+            gap: 5px;
+            margin-left: auto;
+            /* Push to the right */
+            align-items: center;
+        }
+
+        #global_yyyymm,
+        #global_weekth {
+            padding: 0.2em;
+            font-size: 0.8em;
+            width: 75px;
+        }
+
+        .form-tab-button {
+            padding: 8px 15px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            background-color: #e9ecef;
+            color: #495057;
+            border-radius: 4px 4px 0 0;
+            margin-right: 3px;
+            font-size: 0.9em;
+            position: relative;
+            top: 1px;
+        }
+
+        .form-tab-button.active {
+            background-color: #fff;
+            border-color: #ccc;
+            font-weight: bold;
+            border-bottom: 1px solid #fff;
+        }
+
+        .form-tab-content {
+            display: none;
+            padding-top: 1em;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .form-tab-content.active {
+            display: block;
+        }
+
+        .premium-controls {
+            display: flex;
+            align-items: center;
+            gap: 1em;
+            margin-bottom: 1em;
+        }
+
+        .premium-controls select,
+        .premium-controls button {
+            padding: 0.4em;
+            font-size: 0.9em;
+        }
+
+        #premium-chart-container {
+            width: 100%;
+            height: 200px;
+            /* Adjusted height for nested view */
+            margin-bottom: 1.5em;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>⟬ 𝓜𝓐𝓧 トレーディングルーム ⟭</h1>
+    <div class="container">
+        <div class="chart-controls">
+            <select id="interval-select" style="width: auto; margin-left: 0.5em;">
+                <option value="1T" selected>1 分鐘</option>
+                <option value="5T">5 分鐘</option>
+                <option value="15T">15 分鐘</option>
+            </select>
+            <label for="interval-select">K棒</label>
+            <span id="signal-display" style="margin-left: 1em; font-weight: bold; color: #007bff;"></span>
+        </div>
+        <div id="chart-container"></div>
+        <div class="forms-container">
+            <div class="form-wrapper">
+                <div class="form-tab-container">
+                    <button class="form-tab-button active" data-tab="premium-chart-tab">期/權</button>
+                    <button class="form-tab-button" data-tab="combo-form-tab">雙賣</button>
+                    <button class="form-tab-button" data-tab="quote-list-option-tab">權利金列表</button>
+                    <div class="global-controls-wrapper">
+                        <input type="text" id="global_yyyymm" name="yyyymm" value="202510">
+                        <select id="global_weekth" name="weekth">
+                            <option value="TX1" selected>TX1</option>
+                            <option value="TX2">TX2</option>
+                            <option value="TXO">TXO</option>
+                            <option value="TX4">TX4</option>
+                            <option value="TX5">TX5</option>
+                            <option value="TXU">TXU (1st Fri.)</option>
+                            <option value="TXV">TXV (2nd Fri.)</option>
+                            <option value="TXX">TXX (3rd Fri.)</option>
+                            <option value="TXY">TXY (4th Fri.)</option>
+                            <option value="TXZ">TXZ (5th Fri.)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="premium-chart-tab-content" class="form-tab-content active">
+                    <!-- <h2>一般</h2> -->
+                    <form id="order-form" class="form-grid">
+                        <label for="contract_type">合約類型:</label>
+                        <select id="contract_type" name="contract_type">
+                            <option value="Future">期貨 (Future)</option>
+                            <option value="Option">選擇權 (Option)</option>
+                        </select>
+
+                        <label for="action">買賣別 (Action):</label>
+                        <select id="action" name="action">
+                            <option value="Sell">Sell</option>
+                            <option value="Buy">Buy</option>
+                        </select>
+
+                        <label for="price">委託價 (Price):</label>
+                        <input type="number" id="price" name="price" value="" step="any">
+
+                        <label for="octype">倉別 (OCType):</label>
+                        <select id="octype" name="octype">
+                            <option value="Auto">Auto</option>
+                            <option value="New">New</option>
+                            <option value="Cover">Cover</option>
+                        </select>
+
+
+                        <div id="option-fields" class="form-grid" style="grid-column: 1 / -1; margin-bottom: 0;">
+                            <label for="weekth">周別 (weekth):</label>
+                            <select id="weekth" name="weekth">
+                                <option value="TX1" selected>TX1</option>
+                                <option value="TX2">TX2</option>
+                                <option value="TXO">TXO</option>
+                                <option value="TX4">TX4</option>
+                                <option value="TX5">TX5</option>
+                                <option value="TXU">TXU (1st Fri.)</option>
+                                <option value="TXV">TXV (2nd Fri.)</option>
+                                <option value="TXX">TXX (3rd Fri.)</option>
+                                <option value="TXY">TXY (4th Fri.)</option>
+                                <option value="TXZ">TXZ (5th Fri.)</option>
+                            </select>
+
+                            <label for="yyyymm">合約月 (yyyymm):</label>
+                            <input type="text" id="yyyymm" name="yyyymm" value="202510">
+
+                            <label for="strike">履約價 (strike):</label>
+                            <select id="strike" name="strike"></select>
+
+                            <label for="call_put">買賣權 (call_put):</label>
+                            <select id="call_put" name="call_put">
+                                <option value="P">Put</option>
+                                <option value="C">Call</option>
+                            </select>
+                        </div>
+                        <!-- Future Specific Fields -->
+                        <div id="future-fields" class="form-grid hidden" style="grid-column: 1 / -1; margin-bottom: 0;">
+                            <label for="fut">期貨代碼 (fut):</label>
+                            <input type="text" id="fut" name="fut" value="MXF">
+                        </div>
+                        <div class="main-actions">
+                            <button type="submit" id="submit-order">送出委託</button>
+                            <button type="button" id="cancel-orders">刪除全部委託</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="combo-form-tab-content" class="form-tab-content">
+                    <!-- <h2>雙賣</h2> -->
+                    <form id="combo-order-form" class="form-grid">
+                        <label for="combo-weekth">周別 (weekth):</label>
+                        <select id="combo-weekth" name="weekth">
+                            <option value="TX1" selected>TX1</option>
+                            <option value="TX2">TX2</option>
+                            <option value="TXO">TXO</option>
+                            <option value="TX4">TX4</option>
+                            <option value="TX5">TX5</option>
+                        </select>
+
+                        <label for="combo-yyyymm">合約月 (yyyymm):</label>
+                        <input type="text" id="combo-yyyymm" name="yyyymm" value="202510">
+
+                        <label for="combo-strike">履約價 (strike):</label>
+                        <select id="combo-strike" name="strike"></select>
+
+                        <label for="combo-price">權利金 (Price):</label>
+                        <input type="number" id="combo-price" name="price" value="" step="any">
+
+                        <div class="main-actions">
+                            <button type="submit" id="submit-combo-order">單次IOC</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="quote-list-option-tab-content" class="form-tab-content">
+                    <button type="button" id="get-quote-list-option">查詢權利金列表</button>
+                    <div id="quote-list-option-table-container"></div>
+                </div>
+            </div>
+
+            <!-- Right-side Form Wrapper with Nested Tabs -->
+            <div class="form-wrapper">
+                <h2>Parity Premium</h2>
+                <div id="premium-chart-tab-content" class="form-tab-content active">
+                    <div id="premium-chart-container">
+                        <p id="no-premium-msg">(尚未查詢)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- <h2>回應結果</h2> -->
+        <pre id="response">(尚未送出委託)</pre>
+
+        <!-- Main Tab Navigation -->
+        <div class="tab-container">
+            <button class="tab-button active" data-tab="positions">庫存</button>
+            <button class="tab-button" data-tab="pending">掛單</button>
+            <button class="tab-button" data-tab="unitshare">現股庫存</button>
+            <button class="tab-button" data-tab="stock-comparison">個股比較</button>
+        </div>
+
+        <!-- Main Tab Content -->
+        <div id="positions-content" class="tab-content active">
+            <div class="positions-controls">
+                <button type="button" id="get-positions">查詢</button>
+                <!-- <select id="positions-weekth" name="positions-weekth">
+                    <option value="TX1">TX1</option>
+                    <option value="TX2" selected>TX2</option>
+                    <option value="TXO">TXO</option>
+                    <option value="TX4">TX4</option>
+                    <option value="TX5">TX5</option>
+                </select> -->
+                <span id="delta-result"
+                    style="font-size: calc(1em - 4px); background: #fcdf92; padding: 0.2em 0.6em; border-radius: 4px;">
+                </span>
+            </div>
+            <div id="positions-container">
+                <table id="positions-table" class="hidden">
+                    <thead>
+                        <tr>
+                            <th style="text-align: center;">商品代碼</th>
+                            <th style="text-align: center;">方向</th>
+                            <th style="text-align: center;">數量</th>
+                            <th style="text-align: center;">成本</th>
+                            <th style="text-align: center;">市價</th>
+                            <th style="text-align: center;">損益</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <p id="no-positions-msg">(尚未查詢)</p>
+            </div>
+        </div>
+
+        <div id="unitshare-content" class="tab-content">
+            <div class="positions-controls">
+                <button type="button" id="get-unitshare">查詢</button>
+            </div>
+            <div id="unitshare-container">
+                <table id="unitshare-table" class="hidden">
+                    <thead>
+                        <tr>
+                            <th style="text-align: center;">商品代碼</th>
+                            <th style="text-align: center;">方向</th>
+                            <th style="text-align: center;">數量</th>
+                            <th style="text-align: center;">成本</th>
+                            <th style="text-align: center;">市價</th>
+                            <th style="text-align: center;">損益</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <p id="no-unitshare-msg">(尚未查詢)</p>
+            </div>
+        </div>
+
+        <div id="pending-content" class="tab-content">
+            <div id="pending-container">
+                <table id="pending-table" class="hidden">
+                    <thead>
+                        <tr>
+                            <th style="text-align: center;">時間</th>
+                            <th style="text-align: center;">商品</th>
+                            <th style="text-align: center;">買賣</th>
+                            <th style="text-align: right;">價格</th>
+                            <th style="text-align: center;">倉別</th>
+                            <th style="text-align: center;">狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <p id="no-pending-msg">(尚未查詢)</p>
+            </div>
+        </div>
+
+        <div id="stock-comparison-content" class="tab-content">
+            <div id="stock-comparison-chart-container" style="width: 100%; height: 400px;"></div>
+        </div>
+
+    </div>
+
+    <script>
+        const contractTypeSelect = document.getElementById('contract_type');
+        const optionFields = document.getElementById('option-fields');
+        const futureFields = document.getElementById('future-fields');
+        const responseDiv = document.getElementById('response');
+
+        // --- Time Formatters for Charts ---
+        const myTimeFormatter = time => {
+            const date = new Date(time * 1000);
+            const formattedString = date.toLocaleString('zh-TW', {
+                timeZone: 'Asia/Taipei',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+            });
+            // The default format might include a comma, which we can remove if desired.
+            return formattedString.replace(',', '');
+        };
+
+
+        const myTickMarkFormatter = (time) => {
+            const date = new Date(time * 1000);
+            return date.toLocaleString('zh-TW', {
+                timeZone: 'Asia/Taipei',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+            });
+        };
+
+
+        // Function to toggle visibility of fields
+        function toggleFields() {
+            if (contractTypeSelect.value === 'Option') {
+                optionFields.classList.remove('hidden');
+                futureFields.classList.add('hidden');
+            } else {
+                optionFields.classList.add('hidden');
+                futureFields.classList.remove('hidden');
+            }
+        }
+
+
+        // Initial calls to set the correct fields on page load
+        (async () => {
+            toggleFields();
+            const atmStrike = await fetchAtmStrike();
+            populateStrikePrices('strike', atmStrike);
+            populateStrikePrices('combo-strike', atmStrike);
+            // Fetch initial data for Premium Chart and start auto-refresh
+            fetchAndDrawPremiumChart();
+            setInterval(fetchAndDrawPremiumChart, 30000); // Refresh every 30 seconds
+        })();
+
+
+        // 自動依last_price抓區間與多少間距一檔履約價
+        function populateStrikePrices(selectElementId, defaultValue = 777) {
+            const strikeSelect = document.getElementById(selectElementId);
+            const range = 200;
+            const step = 50;
+            const startPrice = defaultValue - range;
+            const endPrice = defaultValue + range;
+            strikeSelect.innerHTML = ''; // Clear existing options
+            for (let price = startPrice; price <= endPrice; price += step) {
+                const option = document.createElement('option');
+                option.value = price;
+                option.textContent = price;
+                if (price === defaultValue) {
+                    option.selected = true;
+                }
+                strikeSelect.appendChild(option);
+            }
+        }
+
+        // Add event listener for changes
+        contractTypeSelect.addEventListener('change', toggleFields);
+
+        //HandleHandleHandleHandleHandleHandleHandleHandleHandleHandleHandleHandle
+        // Handle form submission
+        document.getElementById('order-form').addEventListener('submit', async function (event) {
+            event.preventDefault();
+            responseDiv.textContent = '處理中...';
+            const formData = new FormData(event.target);
+            const data = {};
+            // Always include universal fields
+            data.contract_type = formData.get('contract_type');
+            data.action = formData.get('action');
+            data.price = Number(formData.get('price'));
+            data.octype = formData.get('octype');
+            // Include specific fields based on contract type
+            if (data.contract_type === 'Option') {
+                data.weekth = document.getElementById('global_weekth').value;
+                data.yyyymm = document.getElementById('global_yyyymm').value;
+                data.strike = formData.get('strike');
+                data.call_put = formData.get('call_put');
+            } else {
+                data.fut = formData.get('fut');
+            }
+            try {
+                const response = await fetch('/api/place_order_universal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                responseDiv.textContent = JSON.stringify(result, null, 2);
+            } catch (error) {
+                responseDiv.textContent = `網路或伺服器錯誤: ${error}`;
+            } finally {
+                fetchPendingOrders(); // Refresh pending orders
+            }
+        });
+
+
+        // Handle Combo Order Submission
+        document.getElementById('combo-order-form').addEventListener('submit', async function (event) {
+            event.preventDefault();
+            responseDiv.textContent = '處理中...';
+
+            const formData = new FormData(event.target);
+            const data = {
+                weekth: document.getElementById('global_weekth').value,
+                yyyymm: document.getElementById('global_yyyymm').value,
+                strike: formData.get('strike'),
+                price: Number(formData.get('price'))
+            };
+
+            try {
+                const response = await fetch('/api/new_combo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                responseDiv.textContent = JSON.stringify(result, null, 2);
+            } catch (error) {
+                responseDiv.textContent = `網路或伺服器錯誤: ${error}`;
+            } finally {
+                fetchPendingOrders(); // Refresh pending orders
+            }
+        });
+
+
+        // Handle cancel all orders
+        document.getElementById('cancel-orders').addEventListener('click', async function () {
+            responseDiv.textContent = '正在送出全部刪單請求...';
+            try {
+                const response = await fetch('/api/cancel_all_orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                responseDiv.textContent = JSON.stringify(result, null, 2);
+            } catch (error) {
+                responseDiv.textContent = `網路或伺服器錯誤: ${error}`;
+            } finally {
+                fetchPendingOrders(); // Refresh pending orders
+            }
+        });
+
+
+        // --- Event Listeners ---
+        document.getElementById('get-positions').addEventListener('click', fetchPositions);
+        document.getElementById('get-unitshare').addEventListener('click', fetchUnitShare);
+
+        //HandleHandleHandleHandleHandleHandleHandleHandleHandleHandleHandleHandle
+
+        // signal_enum()
+        const signalDisplay = document.getElementById('signal-display');
+        async function fetchSignalEnum() {
+            try {
+                const response = await fetch('/api/signal_enum');
+                const data = await response.text(); // Assuming the API returns plain text
+                signalDisplay.textContent = data;
+            } catch (error) {
+                console.error('Error fetching signal enum:', error);
+                signalDisplay.textContent = 'Error fetching signal';
+            }
+        }
+        setInterval(fetchSignalEnum, 5000);
+
+
+        // ohlc_chart()
+        const chartContainer = document.getElementById('chart-container');
+        try {
+            const { createChart, CrosshairMode } = window.LightweightCharts;
+
+            const chart = createChart(chartContainer, {
+                width: chartContainer.clientWidth,
+                height: 250,
+                localization: {
+                    timeFormatter: myTimeFormatter,
+                },
+                layout: {
+                    background: { color: '#ffffff' },
+                    textColor: 'rgba(33, 56, 77, 1)',
+                },
+                grid: {
+                    vertLines: {
+                        color: 'rgba(197, 203, 206, 0.5)',
+                    },
+                    horzLines: {
+                        color: 'rgba(197, 203, 206, 0.5)',
+                    },
+                },
+                crosshair: {
+                    mode: CrosshairMode.Normal,
+                },
+                rightPriceScale: {
+                    borderColor: 'rgba(197, 203, 206, 0.8)',
+                    scaleMargins: {
+                        top: 0.2,
+                        bottom: 0.25,
+                    },
+                },
+                timeScale: {
+                    borderColor: 'rgba(197, 203, 206, 0.8)',
+                    timeVisible: true,
+                    secondsVisible: false,
+                    tickMarkFormatter: myTickMarkFormatter,
+                },
+            });
+
+            const candleSeries = chart.addCandlestickSeries({
+                upColor: '#ef5350',
+                borderUpColor: '#ef5350',
+                wickUpColor: '#ef5350',
+
+                downColor: '#26a69a',
+                borderDownColor: '#26a69a',
+                wickDownColor: '#26a69a',
+            });
+
+            const volumeSeries = chart.addHistogramSeries({
+                priceFormat: {
+                    type: 'volume',
+                },
+                priceScaleId: 'volume_scale',
+            });
+
+            chart.priceScale('volume_scale').applyOptions({
+                scaleMargins: {
+                    top: 0.7,
+                    bottom: 0,
+                },
+            });
+
+            let intervalId;
+            const intervalSelect = document.getElementById('interval-select');
+            async function fetchAndUpdateChart() {
+                const interval = intervalSelect.value;
+                try {
+                    const response = await fetch(`/api/ohlc_data?interval=${interval}`);
+                    const data = await response.json();
+
+                    if (data && data.length > 0) {
+                        candleSeries.setData(data);
+
+                        const volumeData = data.map(d => ({
+                            time: d.time,
+                            value: d.value,
+                            color: d.close >= d.open ? 'rgba(239, 83, 80, 0.5)' : 'rgba(38, 166, 154, 0.5)',
+                        }));
+                        volumeSeries.setData(volumeData);
+                    }
+                } catch (error) {
+                    console.error('Chart data fetch error:', error);
+                }
+            }
+            function startChartUpdates() {
+                if (intervalId) {
+                    clearInterval(intervalId);
+                }
+                fetchAndUpdateChart();
+                intervalId = setInterval(fetchAndUpdateChart, 5000);
+            }
+            intervalSelect.addEventListener('change', startChartUpdates);
+            startChartUpdates();
+
+            new ResizeObserver(entries => {
+                if (entries.length === 0 || entries[0].target !== chartContainer) { return; }
+                const newRect = entries[0].contentRect;
+                chart.applyOptions({ width: newRect.width, height: newRect.height });
+            }).observe(chartContainer);
+
+        } catch (e) {
+            chartContainer.innerHTML = `圖表發生錯誤: ${e.message}`;
+            console.error(e);
+        }
+
+
+
+        // strike_atm()  #! 待把預設值改成自動抓取
+        async function fetchAtmStrike(retries = 3, delay = 1000) {
+            const fallbackValue = 25650;
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch('/api/atm_strike');
+                    if (!response.ok) {
+                        console.error(`Attempt ${i + 1}: Error fetching ATM strike: Server responded with status ${response.status}`);
+                        if (i === retries - 1) return fallbackValue; // Last attempt failed
+                        await new Promise(res => setTimeout(res, delay)); // Wait before retrying
+                        continue; // Go to next iteration
+                    }
+                    const result = await response.json();
+                    if (result.status === 'success' && result.atm_strike) {
+                        return result.atm_strike; // Success
+                    } else {
+                        console.warn(`API did not return a successful strike price. Message: ${result.message || 'Unknown reason'}`);
+                        return fallbackValue; // API returned success:false, no need to retry
+                    }
+                } catch (error) {
+                    console.error(`Attempt ${i + 1}: A network or parsing error occurred while fetching ATM strike:`, error);
+                    if (i === retries - 1) return fallbackValue; // Last attempt failed
+                    await new Promise(res => setTimeout(res, delay)); // Wait before retrying
+                }
+            }
+            return fallbackValue; // Should not be reached if retries > 0
+        }
+
+
+        // --- Data Fetching Functions ---
+        async function fetchPendingOrders() {
+            const table = document.getElementById('pending-table');
+            const tableBody = table.querySelector('tbody');
+            const noMsg = document.getElementById('no-pending-msg');
+            tableBody.innerHTML = ''; // Clear previous results
+
+            try {
+                const response = await fetch('/api/pending');
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    if (result.pending_orders && result.pending_orders.length > 0) {
+                        noMsg.classList.add('hidden');
+                        table.classList.remove('hidden');
+                        result.pending_orders.forEach(order => {
+                            const row = `<tr>
+                                <td>${order.t}</td>
+                                <td>${order.code}</td>
+                                <td>${order.action}</td>
+                                <td style="text-align: right;">${order.price}</td>
+                                <td>${order.octype}</td>
+                                <td>${order.status}</td>
+                            </tr>`;
+                            tableBody.insertAdjacentHTML('beforeend', row);
+                        });
+                    } else {
+                        table.classList.add('hidden');
+                        noMsg.classList.remove('hidden');
+                        noMsg.textContent = '沒有掛單。';
+                    }
+                } else {
+                    table.classList.add('hidden');
+                    noMsg.classList.remove('hidden');
+                    noMsg.textContent = `查詢掛單失敗: ${result.message}`;
+                }
+            } catch (error) {
+                table.classList.add('hidden');
+                noMsg.classList.remove('hidden');
+                noMsg.textContent = `查詢掛單時發生錯誤: ${error}`;
+            }
+        }
+
+
+        async function fetchPositions() {
+            responseDiv.textContent = '查詢持倉中...';
+            const table = document.getElementById('positions-table');
+            const tableBody = table.querySelector('tbody');
+            const noPositionsMsg = document.getElementById('no-positions-msg');
+            tableBody.innerHTML = ''; // Clear previous results
+
+            // --- Fetch positions ---
+            try {
+                const response = await fetch('/api/positions');
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    responseDiv.textContent = '持倉查詢成功。';
+                    if (result.positions && result.positions.length > 0) {
+                        noPositionsMsg.classList.add('hidden');
+                        table.classList.remove('hidden');
+                        result.positions.forEach(pos => {
+                            const row = `<tr>
+                                <td>${pos.code}</td>
+                                <td>${pos.direction}</td>
+                                <td style="text-align: right;">${pos.quantity}</td>
+                                <td style="text-align: right;">${pos.price}</td>
+                                <td style="text-align: right;">${pos.last_price}</td>
+                                <td style="text-align: right;">${pos.pnl}</td>
+                            </tr>`;
+                            tableBody.insertAdjacentHTML('beforeend', row);
+                        });
+                    } else {
+                        table.classList.add('hidden');
+                        noPositionsMsg.classList.remove('hidden');
+                        noPositionsMsg.textContent = '沒有持倉部位。';
+                    }
+                } else {
+                    responseDiv.textContent = `查詢失敗: ${result.message}`;
+                    table.classList.add('hidden');
+                    noPositionsMsg.classList.remove('hidden');
+                    noPositionsMsg.textContent = '查詢失敗。';
+                }
+            } catch (error) {
+                responseDiv.textContent = `網路或伺服器錯誤: ${error}`;
+                table.classList.add('hidden');
+                noPositionsMsg.classList.remove('hidden');
+                noPositionsMsg.textContent = '查詢時發生錯誤。';
+            }
+
+            // --- Fetch holding delta ---
+            const deltaResultSpan = document.getElementById('delta-result');
+            deltaResultSpan.textContent = '計算 Delta 中...';
+            const weekth = document.getElementById('global_weekth').value; // 讀取新下拉選單の値
+
+            try {
+                // 將 weekth 值附加到 API 請求中
+                const deltaResponse = await fetch(`/api/positions?mode=delta&weekth=${weekth}`);
+                const deltaResult = await deltaResponse.json();
+                if (deltaResult.status === 'success') {
+                    deltaResultSpan.textContent = deltaResult.delta_info;
+                } else {
+                    deltaResultSpan.textContent = `Delta 查詢失敗: ${deltaResult.message}`;
+                }
+            } catch (error) {
+                deltaResultSpan.textContent = `Delta 查詢錯誤: ${error}`;
+            }
+        }
+
+
+        async function fetchUnitShare() {
+            responseDiv.textContent = '查詢現股庫存中...';
+            const table = document.getElementById('unitshare-table');
+            const tableBody = table.querySelector('tbody');
+            const noMsg = document.getElementById('no-unitshare-msg');
+            tableBody.innerHTML = ''; // Clear previous results
+
+            try {
+                const response = await fetch('/api/unitshare');
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    responseDiv.textContent = '現股庫存查詢成功。';
+                    if (result.positions && result.positions.length > 0) {
+                        noMsg.classList.add('hidden');
+                        table.classList.remove('hidden');
+                        result.positions.forEach(pos => {
+                            const row = `<tr>
+                                <td>${pos.code}</td>
+                                <td>${pos.direction}</td>
+                                <td style="text-align: right;">${pos.quantity}</td>
+                                <td style="text-align: right;">${pos.price}</td>
+                                <td style="text-align: right;">${pos.last_price}</td>
+                                <td style="text-align: right;">${pos.pnl}</td>
+                            </tr>`;
+                            tableBody.insertAdjacentHTML('beforeend', row);
+                        });
+                    } else {
+                        table.classList.add('hidden');
+                        noMsg.classList.remove('hidden');
+                        noMsg.textContent = '沒有現股庫存。';
+                    }
+                } else {
+                    responseDiv.textContent = `查詢失敗: ${result.message}`;
+                    table.classList.add('hidden');
+                    noMsg.classList.remove('hidden');
+                    noMsg.textContent = '查詢失敗。';
+                }
+            } catch (error) {
+                responseDiv.textContent = `網路或伺服器錯誤: ${error}`;
+                table.classList.add('hidden');
+                noMsg.classList.remove('hidden');
+                noMsg.textContent = '查詢時發生錯誤。';
+            }
+        }
+
+
+        // --- Main Tab Logic ---
+        const mainTabContainer = document.querySelector('.tab-container');
+        mainTabContainer.addEventListener('click', (event) => {
+            if (!event.target.matches('.tab-button')) return;
+
+            const tab = event.target.dataset.tab;
+
+            mainTabContainer.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            document.querySelectorAll('.tab-content').forEach(content => {
+                if (content.id === `${tab}-content`) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+
+            if (tab === 'stock-comparison') {
+                drawStockComparisonChart();
+            }
+        });
+
+
+        // --- Nested Form Tab Logic ---
+        const formWrappers = document.querySelectorAll('.form-wrapper');
+        formWrappers.forEach(wrapper => {
+            const tabContainer = wrapper.querySelector('.form-tab-container');
+            if (!tabContainer) return;
+
+            tabContainer.addEventListener('click', (event) => {
+                if (!event.target.matches('.form-tab-button')) return;
+
+                const tab = event.target.dataset.tab;
+
+                tabContainer.querySelectorAll('.form-tab-button').forEach(btn => btn.classList.remove('active'));
+                event.target.classList.add('active');
+
+                wrapper.querySelectorAll('.form-tab-content').forEach(content => {
+                    if (content.id === `${tab}-content`) {
+                        content.classList.add('active');
+                    } else {
+                        content.classList.remove('active');
+                    }
+                });
+            });
+        });
+
+
+        document.getElementById('get-quote-list-option').addEventListener('click', async function () {
+            const container = document.getElementById('quote-list-option-table-container');
+            container.textContent = '查詢中...';
+            try {
+                const response = await fetch('/api/quote_list_option');
+                const result = await response.json();
+                if (result.status === 'success') {
+                    container.innerHTML = result.html;
+                } else {
+                    container.textContent = `查詢失敗: ${result.message}`;
+                }
+            } catch (error) {
+                container.textContent = `網路或伺服器錯誤: ${error}`;
+            }
+        });
+
+
+        let premiumChart = null; // Keep a reference to the chart object
+        async function fetchAndDrawPremiumChart() {
+            const container = document.getElementById('premium-chart-container');
+            const noMsg = document.getElementById('no-premium-msg');
+            if (noMsg) noMsg.textContent = '讀取中...';
+
+            const weekth = document.getElementById('global_weekth').value;
+            const yyyymm = document.getElementById('global_yyyymm').value; // Use existing yyyymm
+            const strike = document.getElementById('strike').value; // Use existing strike
+
+            if (!strike) {
+                container.innerHTML = '<p>錯誤: 無法取得履約價 (strike)，請確認「一般」表單已正確載入。</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/premium_trend?weekth=${weekth}&yyyymm=${yyyymm}&strike=${strike}`);
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+                const result = await response.json();
+
+                if (result.status !== 'success' || result.data.length === 0) {
+                    container.innerHTML = `<p>${result.message || '沒有可顯示的資料。'}</p>`;
+                    if (premiumChart) {
+                        premiumChart.remove();
+                        premiumChart = null;
+                    }
+                    return;
+                }
+
+                if (premiumChart) {
+                    premiumChart.remove();
+                }
+
+                container.innerHTML = ''; // Clear any previous message
+
+                const { createChart } = window.LightweightCharts;
+                premiumChart = createChart(container, {
+                    width: container.clientWidth,
+                    height: 200,
+                    localization: {
+                        timeFormatter: myTimeFormatter,
+                    },
+                    layout: {
+                        background: { color: '#ffffff' },
+                        textColor: 'rgba(33, 56, 77, 1)',
+                    },
+                    grid: {
+                        vertLines: { color: 'rgba(197, 203, 206, 0.5)' },
+                        horzLines: { color: 'rgba(197, 203, 206, 0.5)' },
+                    },
+                    timeScale: {
+                        timeVisible: true,
+                        secondsVisible: false,
+                        tickMarkFormatter: myTickMarkFormatter,
+                    },
+                });
+
+                const colors = ['#007bff', '#dc3545', '#28a745'];
+
+                result.column_names.forEach((colName, index) => {
+                    const series = premiumChart.addLineSeries({
+                        title: colName,
+                        color: colors[index % colors.length],
+                        lineWidth: 2,
+                    });
+                    const seriesData = result.data.map(d => ({
+                        time: d.time,
+                        value: d[colName]
+                    }));
+                    series.setData(seriesData);
+                });
+
+                premiumChart.timeScale().fitContent();
+
+            } catch (error) {
+                console.error('Error fetching or drawing premium chart:', error);
+                container.innerHTML = `<p>繪製圖表時發生錯誤: ${error.message}</p>`;
+            }
+        }
+
+
+        // --- amount_rank() ---
+        async function drawStockComparisonChart() {
+            const chartDiv = document.getElementById('stock-comparison-chart-container');
+            try {
+                const response = await fetch('/api/stock_ohlc_comparison');
+                const data = await response.json();
+                console.log('API response for comparison chart:', data); // Debugging line
+
+                if (!data || data.length === 0) {
+                    chartDiv.innerHTML = '沒有可比較的股票數據。';
+                    return;
+                }
+
+                const trace = {
+                    x: data.map(d => d['名稱▼']),
+                    open: data.map(d => parseFloat(d.O)),
+                    high: data.map(d => parseFloat(d.H)),
+                    low: data.map(d => parseFloat(d.L)),
+                    close: data.map(d => parseFloat(d.C)),
+                    type: 'candlestick',
+                    xaxis: 'x',
+                    yaxis: 'y',
+                    increasing: { line: { color: '#ef5350' } },
+                    decreasing: { line: { color: '#26a69a' } }
+                };
+
+                const layout = {
+                    title: 'Amount Rank OHLC % Comparison',
+                    xaxis: {
+                        title: 'Stock Name',
+                        type: 'category',
+                        rangeslider: { visible: false }
+                    },
+                    yaxis: {
+                        title: 'Change (%)',
+                        ticksuffix: '%'
+                    },
+                    margin: { l: 50, r: 50, b: 100, t: 50, pad: 4 }
+                };
+
+                Plotly.newPlot(chartDiv, [trace], layout);
+
+            } catch (error) {
+                console.error('Error drawing stock comparison chart:', error);
+                chartDiv.innerHTML = `繪製比較圖表時發生錯誤: ${error}`;
+            }
+        }
+
+
+        // --- Initial Data Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchPositions();
+            fetchSignalEnum();
+            fetchPendingOrders();
+        });
+
+    </script>
+</body>
+
+</html>
