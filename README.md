@@ -2,8 +2,8 @@
 
 這是一個基於 Python、FastAPI 和 Shioaji API 的網頁交易介面，讓使用者可以透過瀏覽器進行股票與選擇權的下單、帳戶查詢與圖表分析。
 
-![應用程式截圖](demo.png)
-*(請將 `demio.png` 替換為您的應用程式截圖)*
+
+[![Live Demo 影片封面](demo.png)](https://www.instagram.com/reel/DOOZ_cjEqNL/?utm_source=ig_web_copy_link)
 
 ## ✨ 功能特色
 
